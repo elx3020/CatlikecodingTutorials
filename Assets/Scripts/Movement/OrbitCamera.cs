@@ -25,6 +25,8 @@ public class OrbitCamera : MonoBehaviour
     [SerializeField, Range(-89f, 89f)]
     float minVerticalAngle = -30f, maxVerticalAngle = 60f;
 
+
+    //fields for automatic rotation 
     float lastTimeManualChange;
     [SerializeField, Min(0f)]
     float alignDelay = 5f;
@@ -37,6 +39,7 @@ public class OrbitCamera : MonoBehaviour
     [SerializeField]
     LayerMask obstructionMask = -1;
 
+
     Vector3 cameraHalfExtends
     {
         get
@@ -48,6 +51,11 @@ public class OrbitCamera : MonoBehaviour
             return halfExtends;
         }
     }
+
+
+    // for relative upAxis
+    Quaternion gravityAlignment = Quaternion.identity;
+    Quaternion orbitRotation;
 
 
 
@@ -63,31 +71,35 @@ public class OrbitCamera : MonoBehaviour
     {
         regularCamera = GetComponent<Camera>();
         focusPoint = focus.position;
-        transform.localRotation = Quaternion.Euler(orbitAngles);
+        transform.localRotation = orbitRotation = Quaternion.Euler(orbitAngles);
 
     }
 
     void LateUpdate()
     {
+
+        // to align camera rotation with upaxis relative to gravity
+
+        gravityAlignment = Quaternion.FromToRotation(gravityAlignment * Vector3.up, CustomGravity.GetUpAxis(focusPoint)) * gravityAlignment;
+
+
         UpdateFocusPoint();
         ManualRotation();
         // get the direction of the z vector
         // Vector3 lookDirection = transform.forward;
-        Quaternion lookRotation;
+
         // || AutomaticRotation()
 
-        if (ManualRotation())
+        if (ManualRotation() || AutomaticRotation())
         {
             ConstrainAngles();
-            lookRotation = Quaternion.Euler(orbitAngles);
+            orbitRotation = Quaternion.Euler(orbitAngles);
         }
-        else
-        {
-            lookRotation = transform.localRotation;
-        }
+
+        Quaternion lookRotation = gravityAlignment * orbitRotation;
         Vector3 lookDirection = lookRotation * Vector3.forward;
         Vector3 lookPosition = focusPoint - lookDirection * distance;
-        // AutomaticDistance(lookDirection, ref lookPosition, lookRotation);
+        AutomaticDistance(lookDirection, ref lookPosition, lookRotation);
         transform.SetPositionAndRotation(lookPosition, lookRotation);
     }
 
@@ -150,7 +162,13 @@ public class OrbitCamera : MonoBehaviour
             return false;
         }
 
-        Vector2 movement = new Vector2(focusPoint.x - previousFocusPoint.x, focusPoint.z - previousFocusPoint.z);
+        // automatic aligment custom gravity
+        Vector3 alignedDelta =
+            Quaternion.Inverse(gravityAlignment) *
+            (focusPoint - previousFocusPoint);
+        Vector2 movement = new Vector2(alignedDelta.x, alignedDelta.z);
+
+        // Vector2 movement = new Vector2(focusPoint.x - previousFocusPoint.x, focusPoint.z - previousFocusPoint.z);
 
         float deltaMovementSqrMagnitude = movement.magnitude;
 

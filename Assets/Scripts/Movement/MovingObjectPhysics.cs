@@ -37,7 +37,7 @@ public class MovingObjectPhysics : MonoBehaviour
     Vector3 contactNormals, steepNormal;
 
     // keep reference of world gravity vector direction
-    Vector3 upAxis;
+    Vector3 upAxis, rightAxis, forwardAxis;
 
 
     int jumpPhase;
@@ -73,6 +73,7 @@ public class MovingObjectPhysics : MonoBehaviour
     void Awake()
     {
         body = GetComponent<Rigidbody>();
+        body.useGravity = false;
         OnValidate();
     }
 
@@ -89,30 +90,35 @@ public class MovingObjectPhysics : MonoBehaviour
         playerInput = Vector2.ClampMagnitude(playerInput, 1f);
 
         // velocity to be added to the rigid body 
-
         // align input direction with camera view direction
-
         if (playerInputSpace)
         {
-            Vector3 forward = playerInputSpace.forward;
-            forward.y = 0f;
-            forward.Normalize();
-            Vector3 right = playerInputSpace.right;
-            right.y = 0f;
-            right.Normalize();
-            desiredVelocity = (forward * playerInput.y + right * playerInput.x) * maxSpeed;
-            // forward direction with the camera forward vector.
+            rightAxis = ProjectDirectionOnPlane(playerInputSpace.right, upAxis);
+            forwardAxis = ProjectDirectionOnPlane(playerInputSpace.forward, upAxis);
+
+
+
+            // ---- previous version ------
+            // Vector3 forward = playerInputSpace.forward;
+            // forward.y = 0f;
+            // forward.Normalize();
+            // Vector3 right = playerInputSpace.right;
+            // right.y = 0f;
+            // right.Normalize();
+            // desiredVelocity = (forward * playerInput.y + right * playerInput.x) * maxSpeed;
+
+            // forward direction with the camera forward vector. ---older---
+
             // desiredVelocity = playerInputSpace.TransformDirection(playerInput.x, 0f, playerInput.y) * maxSpeed;
         }
         else
         {
+            rightAxis = ProjectDirectionOnPlane(Vector3.right, upAxis);
+            forwardAxis = ProjectDirectionOnPlane(Vector3.forward, upAxis);
             // assumes forward direction is +z
-            desiredVelocity = new Vector3(playerInput.x, 0f, playerInput.y) * maxSpeed;
         }
 
-
-
-
+        desiredVelocity = new Vector3(playerInput.x, 0f, playerInput.y) * maxSpeed;
         // boolian from which a jump is executed;
         desiredJump |= Input.GetButtonDown("Jump");
 
@@ -128,7 +134,8 @@ public class MovingObjectPhysics : MonoBehaviour
     private void FixedUpdate()
     {
         // get the upaxis (opposite direction of gravity vector)
-        upAxis = -Physics.gravity.normalized;
+        // upAxis = -Physics.gravity.normalized;
+        Vector3 gravity = CustomGravity.GetGravity(body.position, out upAxis);
         // control the change of state (ground,air)
         UpdateState();
         // adjust velocity in cases of change of slope 
@@ -136,8 +143,12 @@ public class MovingObjectPhysics : MonoBehaviour
         if (desiredJump)
         {
             desiredJump = false;
-            Jump();
+            Jump(gravity);
         }
+
+        velocity += gravity * Time.deltaTime;
+
+
         body.velocity = velocity;
         ClearState();
     }
@@ -168,6 +179,7 @@ public class MovingObjectPhysics : MonoBehaviour
         }
     }
 
+    // reset groundcontact count and clean contactnormalas and steep normals
 
     void ClearState()
     {
@@ -176,7 +188,7 @@ public class MovingObjectPhysics : MonoBehaviour
 
     }
 
-    void Jump()
+    void Jump(Vector3 gravity)
     {
         Vector3 jumpDirection;
         if (OnGround)
@@ -203,7 +215,7 @@ public class MovingObjectPhysics : MonoBehaviour
 
         stepsSinceLastJump = 0;
         jumpPhase += 1;
-        float jumpSpeed = Mathf.Sqrt(2f * Physics.gravity.magnitude * jumpHeight);
+        float jumpSpeed = Mathf.Sqrt(2f * gravity.magnitude * jumpHeight);
         jumpDirection = (jumpDirection + upAxis).normalized;
         float alignedSpeed = Vector3.Dot(velocity, jumpDirection);
         if (alignedSpeed > 0f)
@@ -232,6 +244,8 @@ public class MovingObjectPhysics : MonoBehaviour
         return (stairMask & (1 << layer)) == 0 ? minGroundDotProduct : minStairsDotProduct;
     }
 
+    // ground normals are accumulated only if the contact angle is less than the maxgroundangle depending on the layer of the object stairs or ground
+    // steepnormals gets always accumulated
     void EvaluateCollision(Collision collision)
     {
         float minDot = GetMinDot(collision.gameObject.layer);
@@ -252,20 +266,25 @@ public class MovingObjectPhysics : MonoBehaviour
         }
     }
 
-    // obtain a vector projected in the plane
+    // obtain a vector projected in the plane. axis are defined later. Old approach
 
-    Vector3 ProjectOnContactPlane(Vector3 vector)
+    // Vector3 ProjectOnContactPlane(Vector3 vector)
+    // {
+
+    //     return vector - contactNormals * Vector3.Dot(vector, contactNormals);
+    // }
+
+    // use variable axis. Axis is relative to the gravity direction
+    Vector3 ProjectDirectionOnPlane(Vector3 direction, Vector3 normal)
     {
-
-        return vector - contactNormals * Vector3.Dot(vector, contactNormals);
+        return (direction - normal * Vector3.Dot(direction, normal)).normalized;
     }
 
     // adjust the desired velocity by calculating vector velocity direction to be parallel to the current surface
     void AdjustVelocity()
     {
-        Vector3 xAxis = ProjectOnContactPlane(Vector3.right).normalized;
-        Vector3 zAxis = ProjectOnContactPlane(Vector3.forward).normalized;
-
+        Vector3 xAxis = ProjectDirectionOnPlane(rightAxis, contactNormals);
+        Vector3 zAxis = ProjectDirectionOnPlane(forwardAxis, contactNormals);
 
         float currentX = Vector3.Dot(velocity, xAxis);
         float currentZ = Vector3.Dot(velocity, zAxis);
@@ -319,6 +338,7 @@ public class MovingObjectPhysics : MonoBehaviour
         return true;
 
     }
+
 
     bool CheckSteepContacts()
     {
