@@ -28,6 +28,28 @@ void MainLight_float(float3 WorldPos, out float3 Direction, out float3 Color, ou
 #endif
 }
 
+// void MainLightToonModel_float(float3 WorldPos,float3 directionColor,float3 Normal, out float3 ToonModel){
+//     #ifdef SHADERGRAPH_PREVIEW
+//     ToonModel = float3(0,0,0);
+//     directionColor = 0;
+//     #else
+  
+//     float4 shadowCoord = TransformWorldToShadowCoord(WorldPos);
+
+//     Light mainLight = GetMainLight(shadowCoord);
+
+//     half3 attenuatedDirectionLightColor = mainLight.color * (mainLight.distanceAttenuation * mainLight.shadowAttenuation);
+//     directionColor = LightingLambert(attenuatedDirectionLightColor, mainLight.direction,inputData.normalWS); 
+//     directionColor = floor(pow(directionColor,0.4) / (1 / Steps)) * (1 / Steps);
+//     ToonModel = directionColor;
+
+
+
+//     #endif
+
+
+// }
+
 
 void DirectSpecular_float(float3 Specular, float Smoothness, float3 Direction, float3 Color, float3 WorldNormal, float3 WorldView, out float3 Out)
 {

@@ -39,6 +39,10 @@ public class OrbitCamera : MonoBehaviour
     [SerializeField]
     LayerMask obstructionMask = -1;
 
+    [SerializeField]
+    bool autoRotate = false;
+    bool autoDistanceOn = false;
+
 
     Vector3 cameraHalfExtends
     {
@@ -90,7 +94,9 @@ public class OrbitCamera : MonoBehaviour
 
         // || AutomaticRotation()
 
-        if (ManualRotation() || AutomaticRotation())
+        bool automaticRotation = autoRotate ? AutomaticRotation() : autoRotate;
+
+        if (ManualRotation() || automaticRotation)
         {
             ConstrainAngles();
             orbitRotation = Quaternion.Euler(orbitAngles);
@@ -99,7 +105,10 @@ public class OrbitCamera : MonoBehaviour
         Quaternion lookRotation = gravityAlignment * orbitRotation;
         Vector3 lookDirection = lookRotation * Vector3.forward;
         Vector3 lookPosition = focusPoint - lookDirection * distance;
-        AutomaticDistance(lookDirection, ref lookPosition, lookRotation);
+        if (autoDistanceOn)
+        {
+            AutomaticDistance(lookDirection, ref lookPosition, lookRotation);
+        }
         transform.SetPositionAndRotation(lookPosition, lookRotation);
     }
 
