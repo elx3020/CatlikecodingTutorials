@@ -10,6 +10,7 @@ public class TerrainController : MonoBehaviour
     void Start()
     {
         float[,,] map = new float[t.terrainData.alphamapWidth, t.terrainData.alphamapHeight, 2];
+        float[,,] maps = t.terrainData.GetAlphamaps(0, 0, t.terrainData.alphamapWidth, t.terrainData.alphamapHeight);
 
         // For each point on the alphamap...
         for (int y = 0; y < t.terrainData.alphamapHeight; y++)
@@ -26,9 +27,20 @@ public class TerrainController : MonoBehaviour
 
                 // Steepness is given as an angle, 0..90 degrees. Divide
                 // by 90 to get an alpha blending value in the range 0..1.
-                var frac = angle / 70.0;
-                map[y, x, 1] = (float)frac;
-                map[y, x, 0] = (float)(1 - frac);
+                var frac = angle / 90;
+                if (angle > 65)
+                {
+                    map[y, x, 1] = 1;
+
+                }
+                else
+                {
+                    map[y, x, 0] = maps[y, x, 0];
+                    map[y, x, 1] = maps[y, x, 1];
+
+                }
+                // map[y, x, 1] = (float)frac;
+                // map[y, x, 0] = (float)(1 - frac);
             }
         }
         t.terrainData.SetAlphamaps(0, 0, map);

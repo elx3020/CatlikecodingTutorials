@@ -8,4 +8,7 @@ EditorBuildSettings:
   - enabled: 0
     path: 
     guid: 00000000000000000000000000000000
+  - enabled: 1
+    path: Assets/Scenes/Instancing/GrassRendering.unity
+    guid: dda32dfd74cebe247ae648d65582274f
   m_configObjects: {}

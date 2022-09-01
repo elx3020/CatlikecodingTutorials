@@ -415,14 +415,17 @@ half4 SplatmapFragment(Varyings IN) : SV_TARGET
 
     float3 diffuseColor = 0;
     float3 directionColor = 0;
-    float Steps = 4;
+    float Steps = 3;
 
     Light light;
     light = GetMainLight(inputData.shadowCoord);
+    half3 ambientLight = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
 
     half3 attenuatedDirectionLightColor = light.color * (light.distanceAttenuation * light.shadowAttenuation);
     directionColor = LightingLambert(attenuatedDirectionLightColor, light.direction,inputData.normalWS); 
-    directionColor = floor(pow(directionColor,0.4) / (1 / Steps)) * (1 / Steps);
+    // float3 lightColor = dot(light.direction,inputData.normalWS) * light.shadowAttenuation * light.color; //selfshadow 
+    directionColor = floor(directionColor / (1 / Steps)) * (1 / Steps);
+    directionColor += ambientLight; 
 
 
     int pixelLightCount = GetAdditionalLightsCount();
@@ -433,13 +436,13 @@ half4 SplatmapFragment(Varyings IN) : SV_TARGET
         diffuseColor = floor(pow(diffuseColor,  0.4) / (1 / Steps)) * (1 / Steps);
     }
 
-    half3 ambientLight = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
+   
     
 
     // half4 color = UniversalFragmentPBR(inputData, albedo, metallic, /* specular */ half3(0.0h, 0.0h, 0.0h), smoothness, occlusion, /* emission */ half3(0, 0, 0), alpha);
-    half4 color = half4(directionColor * albedo  + diffuseColor + ambientLight ,1.0h);
+    half4 color = half4(directionColor * albedo  + diffuseColor ,1.0h);
 
-    SplatmapFinalColor(color, inputData.fogCoord);
+    // SplatmapFinalColor(color, inputData.fogCoord);
 
     return half4(color.rgb, 1.0h);
 #endif

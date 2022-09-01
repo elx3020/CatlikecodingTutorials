@@ -37,7 +37,7 @@ public class MovingObjectPhysics : MonoBehaviour
     Vector3 contactNormals, steepNormal;
 
     // keep reference of world gravity vector direction
-    Vector3 upAxis, rightAxis, forwardAxis;
+    Vector3 upAxis = new Vector3(0, 1, 0), rightAxis, forwardAxis;
 
 
     int jumpPhase;
@@ -58,6 +58,9 @@ public class MovingObjectPhysics : MonoBehaviour
 
     Rigidbody body = default;
     Vector3 velocity, desiredVelocity;
+
+    [SerializeField]
+    public GravitityController.GravityType gravityType;
 
 
 
@@ -135,7 +138,8 @@ public class MovingObjectPhysics : MonoBehaviour
     {
         // get the upaxis (opposite direction of gravity vector)
         // upAxis = -Physics.gravity.normalized;
-        Vector3 gravity = CustomGravity.GetGravity(body.position, out upAxis);
+        GravitityController.GetGravity getGravity = GravitityController.GetFunction(gravityType);
+        Vector3 gravity = getGravity(body.position, out upAxis);
         // control the change of state (ground,air)
         UpdateState();
         // adjust velocity in cases of change of slope 
@@ -152,6 +156,8 @@ public class MovingObjectPhysics : MonoBehaviour
         body.velocity = velocity;
         ClearState();
     }
+
+   
 
 
 

@@ -14,7 +14,7 @@ struct MeshProperties {
 void ConfigureProcedural () {
 	#if defined(UNITY_PROCEDURAL_INSTANCING_ENABLED)
 		float3 position = _Properties[unity_InstanceID].Position;
-		float3 normal = _Properties[unity_InstanceID].Normal;
+
 		unity_ObjectToWorld = 0.0;
 		unity_ObjectToWorld._m03_m13_m23_m33 = float4(position, 1.0);
 		unity_ObjectToWorld._m11 = 0.7;

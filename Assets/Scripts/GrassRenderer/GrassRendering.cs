@@ -12,7 +12,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 
-// [ExecuteInEditMode]
+[ExecuteInEditMode]
 public class GrassRendering : MonoBehaviour
 
 {
@@ -31,7 +31,7 @@ public class GrassRendering : MonoBehaviour
 
     public int size;
 
-    [Range(0, 20000)]
+    [Range(0, 500000)]
     public int grassNum;
 
     public int startHeight = 1000;
@@ -39,17 +39,22 @@ public class GrassRendering : MonoBehaviour
     ComputeBuffer pointsBuffer;
 
 
-    RenderTexture grassTexture;
-
     Bounds bounds;
 
     static readonly int propertiesId = Shader.PropertyToID("_Properties"),
-    propertiesMId = Shader.PropertyToID("_PropertiesM"),
-    terrainLightMapId = Shader.PropertyToID("_TerrainLightMap");
+    propertiesMId = Shader.PropertyToID("_PropertiesM");
 
-    Vector4 terrainLightMap;
 
     MaterialPropertyBlock materialPropertyBlock;
+
+    private void OnValidate()
+    {
+
+        Random.InitState(seed);
+        Setup();
+        GetPositionFromTerrainFilter();
+
+    }
 
 
 
@@ -59,11 +64,8 @@ public class GrassRendering : MonoBehaviour
     {
 
         Random.InitState(seed);
-
         Setup();
-
-
-
+        GetPositionFromTerrainFilter();
 
 
     }
@@ -72,14 +74,13 @@ public class GrassRendering : MonoBehaviour
     void Setup()
     {
 
-        bounds = new Bounds(terrain.GetPosition() + new Vector3(terrain.terrainData.size.x / 2, 0f, terrain.terrainData.size.z / 2), terrain.terrainData.size);
-
+        bounds = new Bounds(terrain.GetPosition(), terrain.terrainData.size * 2);
 
 
 
 
         // GetPositionFromTerrain();
-        GetPositionFromTerrainFilter();
+
 
 
     }
@@ -95,7 +96,6 @@ public class GrassRendering : MonoBehaviour
             return
                 sizeof(float) * 3 + // position;
                 sizeof(float) * 3; // normal;
-                                   // sizeof(float) * 4;   //lightmap   
         }
 
     }
@@ -190,7 +190,6 @@ public class GrassRendering : MonoBehaviour
         pointsBuffer = new ComputeBuffer(grassNum, MeshProperties.Size());
         pointsBuffer.SetData(properties);
         grassMaterial.SetBuffer(propertiesId, pointsBuffer);
-        terrainLightMap = terrain.realtimeLightmapScaleOffset;
 
 
 
@@ -214,15 +213,17 @@ public class GrassRendering : MonoBehaviour
             MeshProperties instancedProps = new MeshProperties();
             origin.x = (terrainWidth / 2) + terrainWidth * Random.Range(-0.5f, 0.5f);
             origin.z = (terrainHeight / 2) + terrainHeight * Random.Range(-0.5f, 0.5f);
-            if (maps[(int)(origin.z * conversionfactor), (int)(origin.x * conversionfactor), 0] > 0.5f)
+            if (maps[(int)(origin.z * conversionfactor), (int)(origin.x * conversionfactor), 1] < 0.15f && startHeight > terrain.SampleHeight(origin))
             {
                 origin.y = terrain.SampleHeight(origin);
                 origin_normal = terrain.terrainData.GetInterpolatedNormal(origin.x / terrain.terrainData.size.x, origin.z / terrain.terrainData.size.z);
                 // Debug.Log(maps[(int)(origin.x * conversionfactor), (int)(origin.z * conversionfactor), 0]);
+                // origin.x -= terrainWidth / 2;
+                // origin.z -= terrainHeight / 2;
                 instancedProps.Position = origin;
                 instancedProps.Normal = origin_normal;
                 properties[i] = instancedProps;
-                Debug.DrawRay(properties[i].Position, properties[i].Normal, Color.blue, 10f);
+                // Debug.DrawRay(properties[i].Position, properties[i].Normal, Color.blue, 10f);
             }
 
 
@@ -232,7 +233,6 @@ public class GrassRendering : MonoBehaviour
         pointsBuffer = new ComputeBuffer(grassNum, MeshProperties.Size());
         pointsBuffer.SetData(properties);
         grassMaterial.SetBuffer(propertiesId, pointsBuffer);
-        terrainLightMap = terrain.realtimeLightmapScaleOffset;
 
 
 
@@ -275,16 +275,16 @@ public class GrassRendering : MonoBehaviour
 
     {
 
-        GetPositionFromTerrainFilter();
+
         if (materialPropertyBlock == null)
         {
             materialPropertyBlock = new MaterialPropertyBlock();
-            materialPropertyBlock.SetVector(terrainLightMapId, terrainLightMap);
+
         }
-        bounds = new Bounds(transform.position, Vector3.one * (size));
         grassMaterial.SetVector("_TextureOffset", offset);
         // grassMaterial.SetVector("_GrassOffset", transform.position);
         Graphics.DrawMeshInstancedProcedural(grassMesh, 0, grassMaterial, bounds, pointsBuffer.count, materialPropertyBlock, ShadowCastingMode.Off);
+        // Graphics.DrawMeshInstancedIndirect(grassMesh, 0, grassMaterial,bounds,pointsBuffer.count,)
 
 
     }
@@ -303,6 +303,13 @@ public class GrassRendering : MonoBehaviour
         pointsBuffer = null;
 
 
+    }
+
+
+
+    private void OnDrawGizmos()
+    {
+        // Gizmos.DrawCube(terrain.GetPosition() + new Vector3(terrain.terrainData.size.x / 2, 0f, terrain.terrainData.size.z / 2), terrain.terrainData.size);
     }
 
 }
