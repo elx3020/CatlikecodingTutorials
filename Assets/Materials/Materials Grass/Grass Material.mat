@@ -57,6 +57,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
+    - Boolean_973dc1bb975044f78b6b28dc40a52f24: 0
     - Vector1_17e2d1bb0e0a419c8776706c5b3e4d3c: 0.22
     - Vector1_2f981dd7ca2f4f7895ee4ee2b6e644d1: 10
     - Vector1_31cf475cadc14c46aa1210c8e3a8f202: 0
@@ -67,11 +68,11 @@ Material:
     - Vector1_f2c39c873a974fb1aa334c8480836ae0: 7.1
     - _PROCEDURAL_INSTANCING_ONPROCEDURAL_INSTANCING: 0
     m_Colors:
-    - Color_4be000c0f5e5493aa1c935e772a4689b: {r: 0.26032394, g: 0.4716981, b: 0.31914112, a: 0}
+    - Color_4be000c0f5e5493aa1c935e772a4689b: {r: 0.2759434, g: 0.5, b: 0.3419915, a: 0}
     - Vector2_516597047b414989b0229c882bc5f4b3: {r: -25, g: -25, b: 0, a: 0}
     - Vector2_842367c8f477434d974d10f5ae4bc086: {r: 0, g: 0, b: 0, a: 0}
     - Vector3_9f0157a1c82c431d8eda48cb09a804bb: {r: 99.9, g: 0, b: 93.6, a: 0}
-    - _GrassOffset: {r: 96.82, g: 0, b: 90.7, a: 0}
+    - _GrassOffset: {r: 34.94, g: 0, b: 25.67, a: 0}
     - _TerrainLightMap: {r: 0, g: 0, b: 0, a: 0}
     - _TextureOffset: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

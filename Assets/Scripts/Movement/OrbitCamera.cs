@@ -43,6 +43,8 @@ public class OrbitCamera : MonoBehaviour
     bool autoRotate = false;
     bool autoDistanceOn = false;
 
+    [SerializeField]
+    public GravitityController.GravityType gravityType;
 
     Vector3 cameraHalfExtends
     {
@@ -83,8 +85,9 @@ public class OrbitCamera : MonoBehaviour
     {
 
         // to align camera rotation with upaxis relative to gravity
-
-        gravityAlignment = Quaternion.FromToRotation(gravityAlignment * Vector3.up, CustomGravity.GetUpAxis(focusPoint)) * gravityAlignment;
+        GravitityController.GetGravity getGravity = GravitityController.GetFunction(gravityType);
+        Vector3 upAxis = new Vector3();
+        gravityAlignment = Quaternion.FromToRotation(gravityAlignment * Vector3.down, getGravity(focusPoint, out upAxis)) * gravityAlignment;
 
 
         UpdateFocusPoint();
@@ -101,7 +104,7 @@ public class OrbitCamera : MonoBehaviour
             ConstrainAngles();
             orbitRotation = Quaternion.Euler(orbitAngles);
         }
-
+// insert gravity aligment to get rotation with gravity
         Quaternion lookRotation = gravityAlignment * orbitRotation;
         Vector3 lookDirection = lookRotation * Vector3.forward;
         Vector3 lookPosition = focusPoint - lookDirection * distance;

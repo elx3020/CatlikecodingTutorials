@@ -17,6 +17,22 @@ public class GrassRendering : MonoBehaviour
 
 {
 
+     public struct MeshProperties
+    {
+        public Vector3 Position;
+        public Vector3 Normal;
+
+        // public Vector4 lightMap;
+        public static int Size()
+        {
+            return
+                sizeof(float) * 3 + // position;
+                sizeof(float) * 3; // normal;
+        }
+
+    }
+
+
     public Mesh grassMesh;
 
     public Mesh groundMesh;
@@ -24,7 +40,7 @@ public class GrassRendering : MonoBehaviour
     public Terrain terrain;
     public Vector2 offset;
 
-
+    public MeshProperties[] meshProperties;
     public Material grassMaterial;
 
     public int seed;
@@ -47,6 +63,8 @@ public class GrassRendering : MonoBehaviour
 
     MaterialPropertyBlock materialPropertyBlock;
 
+    public GameObject player;
+
     private void OnValidate()
     {
 
@@ -62,11 +80,10 @@ public class GrassRendering : MonoBehaviour
 
     void Awake()
     {
-
         Random.InitState(seed);
         Setup();
         GetPositionFromTerrainFilter();
-
+        player = GameObject.FindGameObjectWithTag("Player");
 
     }
 
@@ -76,7 +93,12 @@ public class GrassRendering : MonoBehaviour
 
         bounds = new Bounds(terrain.GetPosition(), terrain.terrainData.size * 2);
 
+        // bounds = new Bounds(player.GetComponent<Transform>().position, Vector3.one * size);
 
+
+        meshProperties = GetPositionFromTerrainFilter();
+
+        pointsBuffer = new ComputeBuffer(grassNum, MeshProperties.Size());
 
 
         // GetPositionFromTerrain();
@@ -85,21 +107,7 @@ public class GrassRendering : MonoBehaviour
 
     }
 
-    private struct MeshProperties
-    {
-        public Vector3 Position;
-        public Vector3 Normal;
-
-        // public Vector4 lightMap;
-        public static int Size()
-        {
-            return
-                sizeof(float) * 3 + // position;
-                sizeof(float) * 3; // normal;
-        }
-
-    }
-
+   
 
     private struct MeshPropertiesM
     {
@@ -196,7 +204,7 @@ public class GrassRendering : MonoBehaviour
     }
 
 
-    void GetPositionFromTerrainFilter()
+    MeshProperties[] GetPositionFromTerrainFilter()
     {
         MeshProperties[] properties = new MeshProperties[grassNum];
         Vector3 origin = transform.position;
@@ -213,6 +221,11 @@ public class GrassRendering : MonoBehaviour
             MeshProperties instancedProps = new MeshProperties();
             origin.x = (terrainWidth / 2) + terrainWidth * Random.Range(-0.5f, 0.5f);
             origin.z = (terrainHeight / 2) + terrainHeight * Random.Range(-0.5f, 0.5f);
+            // origin.x =   size/2 + size * Random.Range(-0.5f, 0.5f);
+            // origin.z =  size/2 + size * Random.Range(-0.5f, 0.5f);
+
+
+         
             if (maps[(int)(origin.z * conversionfactor), (int)(origin.x * conversionfactor), 1] < 0.15f && startHeight > terrain.SampleHeight(origin))
             {
                 origin.y = terrain.SampleHeight(origin);
@@ -230,16 +243,32 @@ public class GrassRendering : MonoBehaviour
             // 
         }
         // Debug.Log(properties[0].Normal);
-        pointsBuffer = new ComputeBuffer(grassNum, MeshProperties.Size());
-        pointsBuffer.SetData(properties);
-        grassMaterial.SetBuffer(propertiesId, pointsBuffer);
+        // pointsBuffer = new ComputeBuffer(grassNum, MeshProperties.Size());
+
+        return properties;
+
+        // pointsBuffer.SetData(properties);
+        // grassMaterial.SetBuffer(propertiesId, pointsBuffer);
 
 
 
     }
 
 
+    void updateGrassPosition(Vector3 position){
 
+
+        for (int i = 0; i < grassNum; i++){
+
+            Vector3 newPos = new Vector3(meshProperties[i].Position.x + position.x, meshProperties[i].Position.y, meshProperties[i].Position.z + position.z);
+            meshProperties[i].Position.x = newPos.x;
+            meshProperties[i].Position.z = newPos.z;
+
+        }
+        
+
+
+    }
 
 
 
@@ -274,14 +303,20 @@ public class GrassRendering : MonoBehaviour
     private void Update()
 
     {
+        Random.InitState(seed);
 
+        // bounds.center = player.GetComponent<Transform>().position;
+
+        // updateGrassPosition(player.transform.position);
+        pointsBuffer.SetData(meshProperties);
+        grassMaterial.SetBuffer(propertiesId, pointsBuffer);
 
         if (materialPropertyBlock == null)
         {
             materialPropertyBlock = new MaterialPropertyBlock();
 
         }
-        grassMaterial.SetVector("_TextureOffset", offset);
+        // grassMaterial.SetVector("_TextureOffset", offset);
         // grassMaterial.SetVector("_GrassOffset", transform.position);
         Graphics.DrawMeshInstancedProcedural(grassMesh, 0, grassMaterial, bounds, pointsBuffer.count, materialPropertyBlock, ShadowCastingMode.Off);
         // Graphics.DrawMeshInstancedIndirect(grassMesh, 0, grassMaterial,bounds,pointsBuffer.count,)

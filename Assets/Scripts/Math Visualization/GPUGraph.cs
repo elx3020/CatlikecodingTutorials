@@ -6,8 +6,9 @@ public class GPUGraph : MonoBehaviour
 {
 
 
-
+// buffer is a container of data
     ComputeBuffer positionBuffer;
+
 
     [SerializeField]
     ComputeShader computeShader;
@@ -57,7 +58,7 @@ public class GPUGraph : MonoBehaviour
         material.SetBuffer(positionsId, positionBuffer);
         material.SetFloat(stepId, step);
 
-        bounds = new Bounds(Vector3.zero, Vector3.one * (2f + 2f / resolution));
+        bounds = new Bounds(Vector3.zero, Vector3.one * 0.001f);
 
         Graphics.DrawMeshInstancedProcedural(
             mesh, 0, material, bounds, positionBuffer.count
