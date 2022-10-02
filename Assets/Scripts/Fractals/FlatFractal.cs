@@ -66,7 +66,7 @@ public class FlatFractal : MonoBehaviour
                 }
             }
         }
-       
+
     }
 
     // Update is called once per frame
