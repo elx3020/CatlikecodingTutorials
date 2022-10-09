@@ -7,7 +7,6 @@ public class DrawingProceduralFractal : MonoBehaviour
     [SerializeField, Range(1, 8)]
     int depth = 4;
 
-
     [SerializeField]
     Mesh mesh;
     [SerializeField]
@@ -34,6 +33,7 @@ public class DrawingProceduralFractal : MonoBehaviour
     ComputeBuffer[] matricesBuffers;
 
     static readonly int matricesId = Shader.PropertyToID("_Matrices");
+    static MaterialPropertyBlock propertyBlock;
     void Start()
     {
         
@@ -44,14 +44,7 @@ public class DrawingProceduralFractal : MonoBehaviour
             rotation = rotations[childIndex],
         };
     
-    static FractalPart FP(int index) {
-        return new FractalPart
-        {
-            direction = directions[index],
-            rotation = rotations[index],
-        };
-    }
-
+  
     
     void OnEnable() {
 
@@ -75,7 +68,14 @@ public class DrawingProceduralFractal : MonoBehaviour
                 }
             }
         }
-       
+        // assigning something only when the current value is null can be simplify to a single exoression call null-coalescing assignment ??=
+        // if(propertyBlock == null)
+        // {
+        //     propertyBlock = new MaterialPropertyBlock();
+        // }
+
+        //this does the same as the code above
+        propertyBlock ??= new MaterialPropertyBlock();
     }
 
     void OnDisable(){
@@ -101,12 +101,12 @@ public class DrawingProceduralFractal : MonoBehaviour
         float spinAngleDelta = 22.5f * Time.deltaTime;
         FractalPart rootPart = parts[0][0];
         rootPart.spinAngle += spinAngleDelta;
-        rootPart.worldRotation = rootPart.rotation * Quaternion.Euler(0f,rootPart.spinAngle,0f);
+        rootPart.worldRotation = transform.rotation * (rootPart.rotation * Quaternion.Euler(0f,rootPart.spinAngle,0f));
+        rootPart.worldPosition = transform.position;
         parts[0][0] = rootPart;
-        matrices[0][0] = Matrix4x4.TRS(rootPart.worldPosition, rootPart.worldRotation, Vector3.one);
-
-
-        float scale = 1f;
+        float objectScale = transform.lossyScale.x;
+        matrices[0][0] = Matrix4x4.TRS(rootPart.worldPosition, rootPart.worldRotation, objectScale * Vector3.one);
+        float scale = objectScale;
         for (int li = 1; li < parts.Length;li++){
             scale *= 0.5f;
             FractalPart[] parentParts = parts[li - 1];
@@ -124,12 +124,12 @@ public class DrawingProceduralFractal : MonoBehaviour
             }
         }
 
-        var bounds = new Bounds(Vector3.zero, 3f * Vector3.one);
+        var bounds = new Bounds(rootPart.worldPosition, 3f * Vector3.one * objectScale);
         for (int i = 0; i < matricesBuffers.Length; i++){
             ComputeBuffer buffer = matricesBuffers[i];
             buffer.SetData(matrices[i]);
-            material.SetBuffer(matricesId, buffer);
-            Graphics.DrawMeshInstancedProcedural(mesh, 0, material, bounds, buffer.count);
+            propertyBlock.SetBuffer(matricesId, buffer);
+            Graphics.DrawMeshInstancedProcedural(mesh, 0, material, bounds, buffer.count, propertyBlock);
         }
 
 
